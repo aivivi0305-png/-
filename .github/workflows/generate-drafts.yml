@@ -1,0 +1,54 @@
+name: 下書き生成 (調査→下書き→PR作成)
+
+on:
+  schedule:
+    # 毎日 06:00 JST (21:00 UTC) に翌日分の下書きを生成
+    - cron: "0 21 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: generate-drafts
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: 依存関係インストール
+        run: npm ci
+
+      - name: 調査 + 下書き生成
+        run: node scripts/generate.mjs
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PR_BODY_PATH: ${{ runner.temp }}/pr-body.md
+
+      - name: 承認用PRを作成
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BRANCH="drafts/$(date +%Y%m%d-%H%M%S)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add posts/queue
+          if git diff --cached --quiet; then
+            echo "新しい下書きなし。PRは作成しません。"
+            exit 0
+          fi
+          git commit -m "draft: $(date +%Y-%m-%d) の投稿下書き"
+          git push -u origin "$BRANCH"
+          gh pr create \
+            --title "📝 投稿下書きの承認依頼 ($(date +%Y-%m-%d))" \
+            --body-file "${{ runner.temp }}/pr-body.md"
