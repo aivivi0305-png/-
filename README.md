@@ -96,6 +96,19 @@ scheduled_at: 2026-07-21T12:00:00+09:00
 
 キャプションの文体・ハッシュタグは `config/settings.mjs` の `photo` セクションで調整できます。
 
+## 🎞️ Taste Engine — AIに好みを学習させるUI
+
+[`taste-engine/index.html`](taste-engine/index.html) は、写真スタイルのA/B比較であなたの好みをAIに学習させる単体アプリです。サーバー不要・1ファイル完結で、ブラウザで開くだけで動きます。
+
+- **学習させる** — 2つの写真スタイルから好みを選ぶと、オンライン学習(ロジスティック回帰)で要素ごとの重みが更新されます。5回学習するとAIが選択を予測し始め、的中率が「学習度」としてヘッダーに表示されます
+- **好みプロファイル** — 好き/苦手のトップ5タグと、光・構図・色調など要素別の傾向バーを表示
+- **履歴とデータ** — 学習履歴の確認、JSONのエクスポート/インポート、リセット。データはブラウザのlocalStorageに自動保存されます
+- キーボード操作(←/→/S/Z)、ダークモード、スマホ表示に対応
+
+学習結果のエクスポートJSONは、`config/settings.mjs` の `photo` セクション(キャプション文体)を自分好みに調整する際の参考にも使えます。
+
+GitHub Pagesを有効にすれば `https://<owner>.github.io/<repo>/taste-engine/` で公開できます(Settings → Pages → Branch: main)。
+
 ## Instagram利用時の注意
 
 Instagram Graph APIは**公開URLの画像**しか受け付けません。
