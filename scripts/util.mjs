@@ -114,6 +114,37 @@ export function oauth1Header(method, url, creds) {
   );
 }
 
+/**
+ * 本文をプラットフォーム別に分ける。
+ * `<!-- instagram -->` マーカーがあれば、前半をX用、後半をInstagram用にする。
+ */
+export function splitBody(body) {
+  const marker = /<!--\s*instagram\s*-->/i;
+  if (!marker.test(body)) return { x: body.trim(), instagram: body.trim() };
+  const [x, instagram] = body.split(marker);
+  return { x: x.trim(), instagram: (instagram ?? "").trim() || x.trim() };
+}
+
+/**
+ * 既存キューと重複しない次の空き予約枠を返す。
+ * 翌日から順に settings の slots を走査する。
+ */
+export function nextFreeSlots(count, settings, existingScheduledAts) {
+  const taken = new Set(existingScheduledAts);
+  const found = [];
+  for (let day = 1; found.length < count && day <= 60; day++) {
+    const date = dateInTimezone(settings.timezone, day);
+    for (const slot of settings.slots) {
+      if (found.length >= count) break;
+      const at = `${date}T${slot}:00${settings.timezone}`;
+      if (taken.has(at)) continue;
+      taken.add(at);
+      found.push({ date, slot, scheduled_at: at });
+    }
+  }
+  return found;
+}
+
 /** JST(またはsettings.timezone)での日付文字列 YYYY-MM-DD を返す */
 export function dateInTimezone(offset, addDays = 0) {
   const offsetMs =

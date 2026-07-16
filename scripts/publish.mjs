@@ -17,6 +17,7 @@ import {
   listQueueFiles,
   parseDraft,
   serializeDraft,
+  splitBody,
   oauth1Header,
 } from "./util.mjs";
 
@@ -24,7 +25,7 @@ const DRY_RUN = process.env.DRY_RUN === "1";
 const now = new Date();
 let hadError = false;
 
-async function postToX(text) {
+function xCreds() {
   const creds = {
     apiKey: process.env.X_API_KEY,
     apiSecret: process.env.X_API_SECRET,
@@ -34,6 +35,38 @@ async function postToX(text) {
   if (!creds.apiKey || !creds.apiSecret || !creds.accessToken || !creds.accessSecret) {
     throw new Error("Xの認証情報(X_API_KEY等のSecrets)が設定されていません");
   }
+  return creds;
+}
+
+async function uploadMediaToX(imagePath, creds) {
+  const url = "https://upload.twitter.com/1.1/media/upload.json";
+  const form = new FormData();
+  form.append(
+    "media",
+    new Blob([fs.readFileSync(imagePath)]),
+    path.basename(imagePath),
+  );
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { Authorization: oauth1Header("POST", url, creds) },
+    body: form,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(`X media upload ${res.status}: ${JSON.stringify(data)}`);
+  }
+  return data.media_id_string;
+}
+
+async function postToX(text, imagePath) {
+  const creds = xCreds();
+  const payload = { text };
+  if (imagePath) {
+    if (!fs.existsSync(imagePath)) {
+      throw new Error(`画像ファイルが見つかりません: ${imagePath}`);
+    }
+    payload.media = { media_ids: [await uploadMediaToX(imagePath, creds)] };
+  }
   const url = "https://api.twitter.com/2/tweets";
   const res = await fetch(url, {
     method: "POST",
@@ -41,7 +74,7 @@ async function postToX(text) {
       Authorization: oauth1Header("POST", url, creds),
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ text }),
+    body: JSON.stringify(payload),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
@@ -114,20 +147,21 @@ for (const filePath of listQueueFiles()) {
   if (scheduledAt > now) continue; // まだ時刻前
 
   const platforms = Array.isArray(meta.platforms) ? meta.platforms : [meta.platforms];
+  const texts = splitBody(body);
   let changed = false;
 
   for (const platform of platforms) {
     if (meta[`posted_${platform}`]) continue; // 再実行時の二重投稿防止
     try {
       if (DRY_RUN) {
-        console.log(`[DRY_RUN] ${platform} へ投稿: ${filePath}`);
+        console.log(`[DRY_RUN] ${platform} へ投稿: ${filePath}` + (meta.image ? ` (画像: ${meta.image})` : ""));
         continue;
       }
       if (platform === "x") {
-        meta.posted_x = await postToX(body);
+        meta.posted_x = await postToX(texts.x, meta.image);
         console.log(`Xへ投稿完了: ${meta.posted_x}`);
       } else if (platform === "instagram") {
-        meta.posted_instagram = await postToInstagram(body, meta.image);
+        meta.posted_instagram = await postToInstagram(texts.instagram, meta.image);
         console.log(`Instagramへ投稿完了: ${meta.posted_instagram}`);
       } else {
         throw new Error(`未対応のプラットフォーム: ${platform}`);

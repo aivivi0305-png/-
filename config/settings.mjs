@@ -31,6 +31,27 @@ export default {
   // 投稿に付けるハッシュタグ候補(0〜2個をAIが選ぶ)
   hashtags: ["#AI活用", "#生成AI", "#自動化"],
 
+  // ===== 写真投稿 (SIGMA fp) =====
+  // photos/inbox/ に写真を置くと、AIが写真を見てキャプション下書きを作る。
+  photo: {
+    // 写真投稿のデフォルト投稿先(Instagramも使う場合は "instagram" を追加。
+    // その場合は imageBaseUrl の設定が必要)
+    platforms: ["x"],
+
+    // キャプションの方向性。AIはこのスタイルで書く。
+    style: `
+SIGMA fpで撮影した写真の投稿。
+写真の情景や光の様子を短く言葉にする。ポエムになりすぎない。
+撮影時の気づき(設定・レンズ・現像の話など)があれば一言添えると良い。
+`.trim(),
+
+    // 写真投稿用のハッシュタグ候補(0〜3個をAIが選ぶ)
+    hashtags: ["#SIGMAfp", "#シグマ", "#写真好きな人と繋がりたい"],
+
+    // コミットする画像の長辺サイズ(px)。元データはローカルに残す前提。
+    maxEdge: 2048,
+  },
+
   // Instagram 投稿用の画像URLのベース。
   // リポジトリが public なら raw.githubusercontent.com が使える:
   //   https://raw.githubusercontent.com/<owner>/<repo>/main

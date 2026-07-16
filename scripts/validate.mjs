@@ -6,6 +6,7 @@ import fs from "node:fs";
 import {
   listQueueFiles,
   parseDraft,
+  splitBody,
   xWeightedLength,
   X_WEIGHT_LIMIT,
 } from "./util.mjs";
@@ -44,19 +45,21 @@ for (const filePath of listQueueFiles()) {
     errors.push(`${label}: scheduled_at が不正です (例: 2026-07-21T12:00:00+09:00)`);
   }
 
+  const texts = splitBody(body);
+
   if (platforms.includes("x")) {
-    const weighted = xWeightedLength(body);
+    const weighted = xWeightedLength(texts.x);
     if (weighted > X_WEIGHT_LIMIT) {
       errors.push(`${label}: X文字数超過 (${weighted}/${X_WEIGHT_LIMIT})`);
     }
   }
 
-  if (platforms.includes("instagram")) {
-    if (!meta.image) {
-      errors.push(`${label}: Instagram投稿には image が必須です`);
-    } else if (!fs.existsSync(meta.image)) {
-      errors.push(`${label}: 画像ファイルが存在しません: ${meta.image}`);
-    }
+  if (platforms.includes("instagram") && !meta.image) {
+    errors.push(`${label}: Instagram投稿には image が必須です`);
+  }
+
+  if (meta.image && !fs.existsSync(meta.image)) {
+    errors.push(`${label}: 画像ファイルが存在しません: ${meta.image}`);
   }
 }
 

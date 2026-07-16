@@ -9,10 +9,12 @@
   },
   "scripts": {
     "generate": "node scripts/generate.mjs",
+    "caption": "node scripts/caption.mjs",
     "publish-queue": "node scripts/publish.mjs",
     "validate": "node scripts/validate.mjs"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.111.0"
+    "@anthropic-ai/sdk": "^0.111.0",
+    "sharp": "^0.35.3"
   }
 }

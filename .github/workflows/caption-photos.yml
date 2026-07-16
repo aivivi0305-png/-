@@ -1,0 +1,58 @@
+name: 写真キャプション生成 (photos/inbox → 下書きPR)
+
+on:
+  push:
+    paths:
+      - "photos/inbox/**"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: caption-photos
+  cancel-in-progress: false
+
+jobs:
+  caption:
+    runs-on: ubuntu-latest
+    # デフォルトブランチに写真が置かれたときだけ動かす(下書きPRのブランチでは動かない)
+    if: github.event_name == 'workflow_dispatch' || github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: 依存関係インストール
+        run: npm ci
+
+      - name: 写真キャプション生成
+        run: node scripts/caption.mjs
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PR_BODY_PATH: ${{ runner.temp }}/pr-body.md
+
+      - name: 承認用PRを作成
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BRANCH="photos/$(date +%Y%m%d-%H%M%S)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add -A posts/queue images photos/inbox
+          if git diff --cached --quiet; then
+            echo "新しい下書きなし。PRは作成しません。"
+            exit 0
+          fi
+          git commit -m "draft: 写真投稿の下書き ($(date +%Y-%m-%d))"
+          git push -u origin "$BRANCH"
+          if [ -f "${{ runner.temp }}/pr-body.md" ]; then
+            gh pr create \
+              --title "📷 写真投稿の承認依頼 ($(date +%Y-%m-%d))" \
+              --body-file "${{ runner.temp }}/pr-body.md"
+          fi
