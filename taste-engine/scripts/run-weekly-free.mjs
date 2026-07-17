@@ -7,10 +7,14 @@ import { spawnSync } from "node:child_process";
 
 const runtimeRoot = resolve(import.meta.dirname, "..");
 const configPath = process.env.TASTE_ENGINE_WEEKLY_CONFIG
-  ?? join(process.env.HOME ?? projectRoot, ".config", "taste-engine", "weekly.json");
+  ?? join(process.env.HOME ?? runtimeRoot, ".config", "taste-engine", "weekly.json");
 const schemaPath = join(import.meta.dirname, "weekly-report.schema.json");
 const codexBin = process.env.TASTE_ENGINE_CODEX_BIN
   ?? "/Applications/ChatGPT.app/Contents/Resources/codex";
+// TASTE_ENGINE_RUNNER=claude に切り替えると、Codexの代わりにClaude Code CLIで
+// 週次レポートを生成します(Claude Pro/Maxのサブスクリプションで動作)。
+const runner = (process.env.TASTE_ENGINE_RUNNER ?? "codex").toLowerCase();
+const claudeBin = process.env.TASTE_ENGINE_CLAUDE_BIN ?? "claude";
 const dryRun = process.argv.includes("--dry-run");
 
 function fail(message) {
@@ -82,7 +86,7 @@ async function downloadImages(owner, config, directory) {
   return images;
 }
 
-function buildPrompt(owner) {
+function buildPrompt(owner, imagePaths = []) {
   const signals = (owner.entries ?? []).map((entry) => ({
     id: entry.id,
     savedAt: entry.savedAt,
@@ -100,10 +104,16 @@ function buildPrompt(owner) {
     note: entry.note,
     learningMode: entry.learningMode,
   }));
+  const searchLine = runner === "claude"
+    ? "WebSearch/WebFetchツールで現在閲覧できる具体的な一次ページを調べてください。検索結果ページ・架空のURL・リンク集は使わないでください。"
+    : "--searchで現在閲覧できる具体的な一次ページを調べてください。検索結果ページ・架空のURL・リンク集は使わないでください。";
+  const imageLine = runner === "claude" && imagePaths.length
+    ? `\n本人が保存した画像は次のローカルファイルにあります。Readツールで開いて観察してください:\n${imagePaths.map((path) => `- ${path}`).join("\n")}`
+    : "";
   return [
     "あなたは個人用Taste Engineの週次キュレーターです。日本語で週次レポートを作成してください。",
     "以下の保存済みデータは、本人が良いと感じたものと、その理由です。画像が添付されている場合、色、構図、余白、文字、質感、年代感、整然さと崩しも観察してください。",
-    "--searchで現在閲覧できる具体的な一次ページを調べてください。検索結果ページ・架空のURL・リンク集は使わないでください。",
+    searchLine,
     "推薦は必ず5件。本命(close)を2件、少し外側(edge)を2件、意外枠(wildcard)を1件にしてください。全体で site、article、inspiration の3種類を最低1件ずつ含めてください。",
     "推薦理由(reason)は、入力内の具体的な好みの信号に結びつけてください。意外枠には好みとの接点を一つ書いてください。過去に『違う』とされたものや、同じドメインの繰り返しは避けてください。",
     "参考として取り込んだ知識は、提案の観点や説明に活かしてください。ただし、知識として保存された記事の主張を本人の好みだと決めつけないでください。",
@@ -112,10 +122,11 @@ function buildPrompt(owner) {
     "\n保存済みの好み信号:\n" + JSON.stringify(signals),
     "\n参考として取り込んだ知識:\n" + JSON.stringify(knowledge),
     "\n過去の週次推薦への反応:\n" + JSON.stringify(owner.priorFeedback ?? []),
+    imageLine,
   ].join("\n");
 }
 
-function generateReport(owner, imagePaths, outputPath) {
+function generateReportWithCodex(owner, imagePaths, outputPath) {
   const args = [
     "--search", "--ask-for-approval", "never", "--sandbox", "read-only", "exec", "--ephemeral",
     "--output-schema", schemaPath, "--output-last-message", outputPath,
@@ -137,6 +148,52 @@ function generateReport(owner, imagePaths, outputPath) {
   }
 }
 
+async function generateReportWithClaude(owner, imagePaths, outputPath) {
+  const schema = await readFile(schemaPath, "utf8");
+  const prompt = [
+    buildPrompt(owner, imagePaths),
+    "\n出力は次のJSONスキーマに厳密に従うJSONオブジェクトのみとし、前後に説明文・Markdown・コードフェンスを付けないでください:",
+    schema,
+  ].join("\n");
+
+  const result = spawnSync(claudeBin, [
+    "-p",
+    "--output-format", "json",
+    "--allowedTools", "Read,WebSearch,WebFetch",
+  ], {
+    cwd: runtimeRoot,
+    input: prompt,
+    encoding: "utf8",
+    timeout: 12 * 60 * 1000,
+    maxBuffer: 32 * 1024 * 1024,
+  });
+  if (result.error) fail(`Claude Codeを実行できませんでした: ${result.error.message}`);
+  if (result.status !== 0) {
+    const details = (result.stderr || result.stdout || "unknown error").trim().slice(-800);
+    fail(`Claudeのレポート生成に失敗しました: ${details}`);
+  }
+
+  let text;
+  try {
+    const envelope = JSON.parse(result.stdout);
+    text = typeof envelope.result === "string" ? envelope.result : "";
+  } catch {
+    text = result.stdout;
+  }
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start === -1 || end <= start) fail("Claudeの出力からJSONを見つけられませんでした。");
+  const json = text.slice(start, end + 1);
+  JSON.parse(json); // 形式チェック(内容の検証はdeliver側で行われる)
+  await writeFile(outputPath, json, "utf8");
+}
+
+async function generateReport(owner, imagePaths, outputPath) {
+  if (runner === "claude") return generateReportWithClaude(owner, imagePaths, outputPath);
+  if (runner !== "codex") fail(`不明なTASTE_ENGINE_RUNNERです: ${runner}(codex または claude)`);
+  return generateReportWithCodex(owner, imagePaths, outputPath);
+}
+
 async function main() {
   const config = await loadConfig();
   console.log("Taste Engine: weekly runner started.");
@@ -152,7 +209,7 @@ async function main() {
     for (const owner of eligibleOwners) {
       const images = await downloadImages(owner, config, directory);
       const outputPath = join(directory, `report-${owner.ownerId}.json`);
-      generateReport(owner, images, outputPath);
+      await generateReport(owner, images, outputPath);
       const report = JSON.parse(await readFile(outputPath, "utf8"));
       const result = await requestJson(`${config.baseUrl}/api/jobs/weekly/deliver`, config.secret, {
         method: "POST",

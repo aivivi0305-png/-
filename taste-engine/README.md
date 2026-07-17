@@ -35,6 +35,48 @@ This starter does not use `wrangler.jsonc`.
 - Telegram intake lives in `app/api/telegram/webhook/route.ts`.
 - Weekly context and delivery live in `lib/weekly.ts` and `scripts/`.
 
+## エージェント連携(Taste Context)
+
+このハブの本来の使い方は、**蓄積した嗜好を Codex / Claude Code などの作業エージェントから参照させる**ことです。実作業は各プロジェクトのエージェントで行い、その判断基準としてここで育てたコンテキストを渡します。
+
+### 1. API から取得する(推奨)
+
+`GET /api/agent/context` が、好みプロフィール(週次分析)・好みシグナル・知識メモ・推薦への反応を **TASTE.md 形式の Markdown** で返します(`?format=json` でJSON)。認証は週次ジョブと同じ `WEEKLY_JOB_SECRET` の Bearer トークンです。
+
+各プロジェクトのディレクトリで:
+
+```bash
+node /path/to/taste-engine/scripts/taste-context.mjs   # → ./TASTE.md を生成/更新
+```
+
+設定は週次ランナーと共通(`~/.config/taste-engine/weekly.json` の `baseUrl` / `secret`)。
+
+### 2. プロジェクト側の設定スニペット
+
+生成した `TASTE.md` をエージェントに読ませるため、各プロジェクトの `CLAUDE.md` / `AGENTS.md` に以下を追記します:
+
+```markdown
+## 嗜好コンテキスト
+
+デザイン・写真・文章・UIなど、見た目や表現の判断が必要な場面では、
+まず `TASTE.md`(本人の嗜好コンテキスト)を読んで判断基準にすること。
+「知識」セクションは参考情報であり、本人の好みそのものとして扱わないこと。
+古い可能性がある場合は `node <taste-engine>/scripts/taste-context.mjs` で更新できる。
+```
+
+### 3. ハブからコピーする
+
+ハブの「制作に使う」パネルの**「嗜好コンテキストをコピー」**ボタンで、画面に読み込まれている実データからMarkdownを生成してクリップボードにコピーできます。スクリプトを叩けない環境(スマホ等)からチャットに直接貼る用です。
+
+### 週次レポートを Claude Code で生成する
+
+週次ランナーはデフォルトで ChatGPT 同梱の Codex を使いますが、環境変数で Claude Code に切り替えられます(Claude Pro/Max のサブスクリプションで動作、APIキー不要):
+
+```bash
+TASTE_ENGINE_RUNNER=claude node scripts/run-weekly-free.mjs
+# claude CLI の場所が特殊な場合: TASTE_ENGINE_CLAUDE_BIN=/path/to/claude
+```
+
 ## Workspace Auth Headers
 
 OpenAI workspace sites can read the current user's email from

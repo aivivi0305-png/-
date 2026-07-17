@@ -34,8 +34,14 @@ The product has two separate learning layers:
 - `lib/telegram.ts` — Telegram messages and inline keyboard definitions.
 - `db/schema.ts` and `drizzle/` — durable D1 schema and migrations.
 - `lib/weekly.ts` — context for weekly recommendations and Telegram delivery.
+- `lib/agent-context.ts` and `app/api/agent/context/route.ts` — the taste
+  context export for coding agents (Claude Code / Codex). Bearer-authenticated
+  with `WEEKLY_JOB_SECRET`; returns TASTE.md-style markdown or JSON.
+- `scripts/taste-context.mjs` — fetches the agent context into any project as
+  `TASTE.md`. Uses the same local config file as the weekly runner.
 - `scripts/run-weekly-free.mjs` — local weekly runner; it passes both taste
-  signals and knowledge references to the weekly curator.
+  signals and knowledge references to the weekly curator. The curator CLI is
+  switchable: Codex by default, Claude Code with `TASTE_ENGINE_RUNNER=claude`.
 
 ## Telegram learning flow
 

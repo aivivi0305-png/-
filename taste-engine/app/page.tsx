@@ -36,7 +36,7 @@ type Recommendation = {
   url?: string;
 };
 
-type WeeklySummary = { weekKey: string; profileSummary: string; observation: string };
+type WeeklySummary = { weekKey: string; profileSummary: string; observation: string; question?: string };
 
 const roles: TasteRole[] = [
   "見るのが好き",
@@ -341,6 +341,52 @@ export default function Home() {
     ? `接続済み · ${telegramStatus.entries}件`
     : telegramStatus.configured ? "ペアリング待ち" : "未設定";
 
+  // Codex / Claude Code へ貼り付けるための嗜好コンテキストを、画面に読み込み済みの
+  // 実データから組み立てる(ローカルのサンプルシードは含めない)。
+  const copyAgentContext = async () => {
+    const seedIds = new Set(savedSeed.map((item) => item.id));
+    const realItems = collectionItems.filter((item) => !seedIds.has(item.id));
+    const tasteItems = realItems.filter((item) => item.learningMode !== "knowledge").slice(0, 15);
+    const lines = [
+      "# Taste Context(Taste Engineのスナップショット)",
+      "",
+      "## エージェント向けの使い方",
+      "- 見た目・表現の判断が必要な場面で、以下の嗜好を判断基準として参照すること。",
+      "- 「知識」は本人が参考として保存した考え方であり、好みそのものとして扱わないこと。",
+      "- タスク側の明示的な要求と嗜好が衝突する場合は要求を優先し、その旨を一言添えること。",
+      "",
+    ];
+    if (weeklySummary) {
+      lines.push(`## 現在の好みプロフィール(${weeklySummary.weekKey}週の分析)`, weeklySummary.profileSummary, "");
+      if (weeklySummary.observation) lines.push("### 変化・仮説", weeklySummary.observation, "");
+      if (weeklySummary.question) lines.push("### 本人がいま検討中の問い", weeklySummary.question, "");
+    } else {
+      lines.push("## 現在の好みプロフィール", "(まだ週次分析が生成されていません。以下の生シグナルから慎重に読み取ってください。)", "");
+    }
+    if (answered) lines.push(`## 直近の回答`, `「光と余白、どちらに惹かれるか」→「${answered}」`, "");
+    if (tasteItems.length) {
+      lines.push("## 好みのシグナル(新しい順)");
+      tasteItems.forEach((item) => {
+        const parts = [`**${item.title}**`, item.tags.filter((tag) => tag !== "Telegram").join(" / "), item.url].filter(Boolean);
+        lines.push(`- [${item.type}] ${parts.join(" — ")}`);
+      });
+      lines.push("");
+    }
+    if (knowledgeItems.length) {
+      lines.push("## 取り込んだ知識(本人の持ち帰りメモ)");
+      knowledgeItems.slice(0, 15).forEach((item) => {
+        lines.push(`- **${item.title}** — 「${item.knowledgeNote}」${item.url ? ` — ${item.url}` : ""}`);
+      });
+      lines.push("");
+    }
+    try {
+      await navigator.clipboard.writeText(lines.join("\n"));
+      setToast("嗜好コンテキストをコピーしました。CLAUDE.md / AGENTS.md に貼り付けてください");
+    } catch {
+      setToast("コピーできませんでした。ブラウザの権限を確認してください");
+    }
+  };
+
   return (
     <div className="shell">
       <header className="topbar">
@@ -432,24 +478,48 @@ export default function Home() {
           </section>
 
           <section className="panel portrait-panel" id="portrait" aria-labelledby="portrait-heading">
-            <div className="panel-top"><span className="panel-label">好みプロフィール</span><span className="panel-meta">AIの現在の理解</span></div>
-            <div className="portrait-head">
-              <h2 id="portrait-heading">秩序の中に、<br />人の痕跡を残す。</h2>
-              <div className="portrait-score" aria-label={`${portraitProgress}% 完了`}>
-                <strong>{portraitProgress}<small>%</small></strong>
-                <span>学習度</span>
-              </div>
+            <div className="panel-top">
+              <span className="panel-label">好みプロフィール</span>
+              <span className="panel-meta">{weeklySummary ? `${weeklySummary.weekKey}週の分析` : "サンプル表示"}</span>
             </div>
-            <div className="trait-list">
-              {portraitTraits.map((trait) => (
-                <div className="trait" key={trait.label}>
-                  <span className="trait-label">{trait.label}</span>
-                  <strong>{trait.value}</strong>
-                  <div className="trait-line"><i style={{ width: `${trait.score}%` }} /></div>
+            {weeklySummary ? (
+              <>
+                <div className="portrait-head">
+                  <h2 id="portrait-heading">AIが読み取った、<br />いまの好み。</h2>
+                  <div className="portrait-score" aria-label={`${portraitProgress}% 完了`}>
+                    <strong>{portraitProgress}<small>%</small></strong>
+                    <span>学習度</span>
+                  </div>
                 </div>
-              ))}
-            </div>
-            <button className="text-link" onClick={() => setToast("50件たまると、詳しい好みプロフィールを作成できます")}>AIの解釈を確認・修正する <span aria-hidden="true">→</span></button>
+                <p className="portrait-summary">{weeklySummary.profileSummary}</p>
+                {weeklySummary.observation && (
+                  <div className="portrait-block"><span>変化・仮説</span><p>{weeklySummary.observation}</p></div>
+                )}
+                {weeklySummary.question && (
+                  <div className="portrait-block"><span>今週の問い</span><p>{weeklySummary.question}</p></div>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="portrait-head">
+                  <h2 id="portrait-heading">秩序の中に、<br />人の痕跡を残す。</h2>
+                  <div className="portrait-score" aria-label={`${portraitProgress}% 完了`}>
+                    <strong>{portraitProgress}<small>%</small></strong>
+                    <span>学習度</span>
+                  </div>
+                </div>
+                <div className="trait-list">
+                  {portraitTraits.map((trait) => (
+                    <div className="trait" key={trait.label}>
+                      <span className="trait-label">{trait.label}</span>
+                      <strong>{trait.value}</strong>
+                      <div className="trait-line"><i style={{ width: `${trait.score}%` }} /></div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+            <button className="text-link" onClick={() => setToast(weeklySummary ? "分析はTelegramの週次レポートと同期しています" : "週次レポートが届くと、ここが実データに置き換わります")}>{weeklySummary ? "この解釈が違うときはTelegramで訂正 " : "AIの解釈を確認・修正する "}<span aria-hidden="true">→</span></button>
           </section>
         </div>
 
@@ -556,12 +626,15 @@ export default function Home() {
 
         <section className="brief-panel" id="brief" aria-labelledby="brief-heading">
           <div className="brief-copy">
-            <span className="panel-label">学習した好みを活用</span>
+            <span className="panel-label">Codex / Claude Code から参照</span>
             <h2 id="brief-heading">制作に使う</h2>
-            <p>AIが理解した好みから、色・余白・写真・タイポグラフィの指示書を作成します。</p>
-            <div className="brief-tags"><span>温かい白</span><span>深い自然光</span><span>太いサンセリフ</span><span>一箇所の崩し</span></div>
+            <p>実作業はいつものエージェントで。ここで育てた嗜好コンテキストを渡すと、各プロジェクトのアウトプットがあなたの好みに寄ります。</p>
+            <div className="brief-ways">
+              <div><b>いますぐ</b>「嗜好コンテキストをコピー」で、作業中のチャットや CLAUDE.md / AGENTS.md に貼り付け</div>
+              <div><b>自動で</b>各プロジェクトで <code>node &lt;taste-engine&gt;/scripts/taste-context.mjs</code> を実行すると最新の TASTE.md が生成されます</div>
+            </div>
           </div>
-          <button onClick={() => setToast("好みプロフィール完成後に、制作指示書を生成できます")}>制作指示書を作る <span aria-hidden="true">↗</span></button>
+          <button onClick={copyAgentContext}>嗜好コンテキストをコピー <span aria-hidden="true">⧉</span></button>
         </section>
       </main>
 
