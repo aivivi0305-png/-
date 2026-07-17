@@ -337,240 +337,242 @@ export default function Home() {
     setToast(`「${reaction}」として学習しました`);
   };
 
+  const telegramStateLabel = telegramStatus.paired
+    ? `接続済み · ${telegramStatus.entries}件`
+    : telegramStatus.configured ? "ペアリング待ち" : "未設定";
+
   return (
-    <main className="app-shell">
-      <aside className="sidebar">
-        <Wordmark />
-        <p className="sidebar-purpose">AIに好みを教え、<br />理解を育てるハブ</p>
-        <nav className="side-nav" aria-label="メインナビゲーション">
-          <button className={activeNav === "home" ? "active" : ""} onClick={() => navigateTo("home")}><span>01</span>ホーム</button>
-          <button className={activeNav === "collection" ? "active" : ""} onClick={() => navigateTo("collection")}><span>02</span>保存したもの</button>
-          <button className={activeNav === "portrait" ? "active" : ""} onClick={() => navigateTo("portrait")}><span>03</span>好みプロフィール</button>
-          <button className={activeNav === "brief" ? "active" : ""} onClick={() => navigateTo("brief")}><span>04</span>制作に使う</button>
-        </nav>
-        <div className="sidebar-foot">
-          <p>学習データ</p>
-          <strong>{signalCount}<small>/ 50</small></strong>
-          <div className="mini-progress"><span style={{ width: `${portraitProgress}%` }} /></div>
-          <span>{remaining ? `あと${remaining}件で最初の好みプロフィール` : "好みプロフィールを作成できます"}</span>
+    <div className="shell">
+      <header className="topbar">
+        <div className="topbar-inner">
+          <Wordmark />
+          <nav className="top-nav" aria-label="メインナビゲーション">
+            <button className={activeNav === "home" ? "active" : ""} onClick={() => navigateTo("home")}>ホーム</button>
+            <button className={activeNav === "collection" ? "active" : ""} onClick={() => navigateTo("collection")}>保存したもの</button>
+            <button className={activeNav === "portrait" ? "active" : ""} onClick={() => navigateTo("portrait")}>好みプロフィール</button>
+            <button className={activeNav === "brief" ? "active" : ""} onClick={() => navigateTo("brief")}>制作に使う</button>
+          </nav>
+          <button className="save-button" onClick={() => setSaveOpen(true)}><span aria-hidden="true">＋</span>好みを教える</button>
         </div>
-      </aside>
+      </header>
 
-      <section className="page">
-        <header className="topbar">
-          <div className="mobile-mark"><Wordmark /></div>
-          <div className="today-label"><span className="live-dot" /> 好みの学習状況：{portraitProgress}%</div>
-          <button className="save-button" onClick={() => setSaveOpen(true)}><span>＋</span> AIに好みを教える</button>
-        </header>
-
-        <div className="content">
-          <section className="intro hub-intro" id="home">
-            <div className="eyebrow">Taste learning hub <span>あなた専用</span></div>
-            <div className="hub-intro-grid">
-              <div>
-                <p className="intro-label">ここは何をする場所？</p>
-                <h1>あなたの「好き」を、<br /><em>AIに教える場所。</em></h1>
-              </div>
-              <p className="hub-description">気になったものを保存し、AIからの質問に答え、解釈が違えば直す。その繰り返しで、自分でも言葉にできない好みを育てていきます。</p>
+      <main className="page">
+        <section className="hero" id="home">
+          <div className="hero-copy">
+            <p className="eyebrow">Taste learning hub · あなた専用</p>
+            <h1>あなたの「好き」を、<em>AIに教える場所。</em></h1>
+            <p className="hero-lead">気になったものを保存し、AIからの質問に答え、解釈が違えば直す。その繰り返しで、自分でも言葉にできない好みを育てていきます。</p>
+          </div>
+          <aside className="hero-progress" aria-label="学習の進み具合">
+            <div className="progress-top">
+              <span>学習データ</span>
+              <strong>{signalCount}<small> / 50</small></strong>
             </div>
-          </section>
+            <div className="progress-bar" role="img" aria-label={`学習の進み具合 ${portraitProgress}%`}><i style={{ width: `${portraitProgress}%` }} /></div>
+            <p className="progress-note">{remaining ? `あと${remaining}件で最初の好みプロフィールが完成します` : "好みプロフィールを作成できます"}</p>
+            <div className="hero-chips">
+              <span className={`chip${telegramStatus.paired ? " chip-on" : ""}`}><i className="chip-dot" aria-hidden="true" />Telegram {telegramStateLabel}</span>
+              <span className="chip">{weeklySummary ? `週次レポート ${weeklySummary.weekKey}` : "週次レポートは3件学習後"}</span>
+            </div>
+          </aside>
+        </section>
 
-          <section className="learning-section" aria-labelledby="learning-heading">
-            <div className="section-heading">
-              <div><span className="section-index">01</span><h2 id="learning-heading">今日やること</h2></div>
+        <section className="section" aria-labelledby="learning-heading">
+          <div className="section-head">
+            <div>
+              <h2 id="learning-heading">今日やること</h2>
               <p>3分ほどで、AIの理解が少し深まります。</p>
             </div>
-            <div className="learning-grid">
-              <button className="task-card task-primary" onClick={() => setSaveOpen(true)}>
-                <span className="task-number">1</span>
-                <span className="task-status">{telegramStatus.paired ? "Telegram接続済み" : "まずはこれ"}</span>
-                <div>
-                  <h3>AIに好みを教える</h3>
-                  <p>気になった画像やサイトを保存して、どこが好きかを伝えます。</p>
-                </div>
-                <span className="task-action">保存する <b>＋</b></span>
-              </button>
-              <button className={`task-card${answered ? " task-done" : ""}`} onClick={() => document.getElementById("question")?.scrollIntoView({ behavior: "smooth", block: "center" })}>
-                <span className="task-number">2</span>
-                <span className="task-status">{answered ? "回答済み ✓" : "1問あります"}</span>
-                <div>
-                  <h3>AIの質問に答える</h3>
-                  <p>迷っている点だけ比較して、好みの境界をはっきりさせます。</p>
-                </div>
-                <span className="task-action">{answered ? "回答を見直す" : "質問に答える"} <b>→</b></span>
-              </button>
-              <button className="task-card" onClick={() => navigateTo("portrait")}>
-                <span className="task-number">3</span>
-                <span className="task-status">更新あり</span>
-                <div>
-                  <h3>AIの理解を確認する</h3>
-                  <p>現在の解釈を読み、違うところがあれば修正します。</p>
-                </div>
-                <span className="task-action">理解を見る <b>→</b></span>
-              </button>
-            </div>
-            <div className="learning-loop" aria-label="好みを学習する流れ">
-              <span><b>01</b> 保存する</span><i>→</i><span><b>02</b> 反応を伝える</span><i>→</i><span><b>03</b> AIが解釈する</span><i>→</i><span><b>04</b> 自分で修正する</span>
-            </div>
-            {telegramStatus.configured && (
-              <div className="telegram-channel" role="status">
-                <span className="telegram-mark">➤</span>
-                <div><strong>Telegramから保存</strong><p>画像やURLをBotへ送るだけで、このハブへ自動で追加されます。</p></div>
-                <span className={telegramStatus.paired ? "channel-state connected" : "channel-state"}>{telegramStatus.paired ? `${telegramStatus.entries}件 · 接続済み` : "ペアリング待ち"}</span>
-              </div>
-            )}
-            {telegramStatus.configured && (
-              <div className="knowledge-channel">
-                <span>＋</span><p><b>記事も育てる</b> 記事や編集論を送ると、「好み」「知識」「両方」から学び方を選べます。</p>
-              </div>
-            )}
-          </section>
-
-          <div className="two-column hub-columns">
-            <section className="question-panel" id="question" aria-labelledby="question-heading">
-              <div className="panel-topline"><span>02</span><span>AIからの質問 · 1問</span></div>
-              <p className="panel-kicker">この回答も学習データになります</p>
-              <h2 id="question-heading">惹かれているのは、<br />光ですか、余白ですか？</h2>
-              <div className="compare-grid">
-                <button className={answered === "光" ? "selected" : ""} onClick={() => answerQuestion("光")} aria-pressed={answered === "光"}>
-                  <Art className="art-choice-light" compact /><span><b>A</b> 光</span>
-                </button>
-                <button className={answered === "余白" ? "selected" : ""} onClick={() => answerQuestion("余白")} aria-pressed={answered === "余白"}>
-                  <Art className="art-choice-space" compact /><span><b>B</b> 余白</span>
-                </button>
-              </div>
-              {answered ? <p className="answer-confirm">「{answered}」を学習しました。いつでも変更できます。</p> : <p className="question-foot">正解はありません。いまの直感で選んでください。</p>}
-            </section>
-
-            <section className="portrait-panel" id="portrait" aria-labelledby="portrait-heading">
-              <div className="panel-topline"><span>03</span><span>好みプロフィール · 現在</span></div>
-              <div className="portrait-head">
-                <div>
-                  <p className="panel-kicker">AIが今、こう理解しています</p>
-                  <h2 id="portrait-heading">秩序の中に<br />人の痕跡を残す。</h2>
-                </div>
-                <div className="portrait-orbit" aria-label={`${portraitProgress}% 完了`}>
-                  <div className="orbit-number">{portraitProgress}<small>%</small></div>
-                </div>
-              </div>
-              <div className="trait-list">
-                {portraitTraits.map((trait) => (
-                  <div className="trait" key={trait.label}>
-                    <span>{trait.label}</span><strong>{trait.value}</strong>
-                    <div className="trait-line"><i style={{ width: `${trait.score}%` }} /></div>
-                  </div>
-                ))}
-              </div>
-              <button className="text-link" onClick={() => setToast("50件たまると、詳しい好みプロフィールを作成できます")}>AIの解釈を確認・修正する <span>→</span></button>
-            </section>
           </div>
-
-          <section className="recommendation-section" aria-labelledby="recommendation-heading">
-            <div className="section-heading">
-              <div><span className="section-index">04</span><h2 id="recommendation-heading">{weeklySummary ? "今週の発見" : "好みを確かめる3件 · サンプル"}</h2></div>
-              <p>{weeklySummary ? `${weeklySummary.weekKey}の週次レポート` : "3件以上学習すると、週次レポートに置き換わります。"}</p>
-            </div>
-            {weeklySummary && (
-              <div className="weekly-summary">
-                <div><span>今週見えている好み</span><p>{weeklySummary.profileSummary}</p></div>
-                <div><span>変化・仮説</span><p>{weeklySummary.observation}</p></div>
+          <div className="task-grid">
+            <button className="task-card task-primary" onClick={() => setSaveOpen(true)}>
+              <div className="task-top"><span className="task-number">1</span><span className="task-status">{telegramStatus.paired ? "Telegram接続済み" : "まずはこれ"}</span></div>
+              <h3>AIに好みを教える</h3>
+              <p>気になった画像やサイトを保存して、どこが好きかを伝えます。</p>
+              <span className="task-action">保存する <b aria-hidden="true">＋</b></span>
+            </button>
+            <button className={`task-card${answered ? " task-done" : ""}`} onClick={() => document.getElementById("question")?.scrollIntoView({ behavior: "smooth", block: "center" })}>
+              <div className="task-top"><span className="task-number">2</span><span className="task-status">{answered ? "回答済み ✓" : "1問あります"}</span></div>
+              <h3>AIの質問に答える</h3>
+              <p>迷っている点だけ比較して、好みの境界をはっきりさせます。</p>
+              <span className="task-action">{answered ? "回答を見直す" : "質問に答える"} <b aria-hidden="true">→</b></span>
+            </button>
+            <button className="task-card" onClick={() => navigateTo("portrait")}>
+              <div className="task-top"><span className="task-number">3</span><span className="task-status">更新あり</span></div>
+              <h3>AIの理解を確認する</h3>
+              <p>現在の解釈を読み、違うところがあれば修正します。</p>
+              <span className="task-action">理解を見る <b aria-hidden="true">→</b></span>
+            </button>
+          </div>
+          {telegramStatus.configured && (
+            <div className="telegram-channel" role="status">
+              <span className="telegram-mark" aria-hidden="true">➤</span>
+              <div>
+                <strong>Telegramから保存できます</strong>
+                <p>画像やURLをBotへ送るだけでこのハブに追加。記事は「好み」「知識」「両方」から学び方を選べます。</p>
               </div>
-            )}
-            <div className="recommendation-grid">
-              {weeklyRecommendations.map((item) => (
-                <button className="recommendation-card" key={item.id} onClick={() => setSelectedRecommendation(item)}>
-                  <div className="recommendation-art-wrap">
-                    <Art className={item.art} />
-                    <span className={`kind kind-${item.kindClass}`}>{item.kind}</span>
-                    <span className="open-mark">↗</span>
-                  </div>
-                  <div className="recommendation-copy">
-                    <div className="match-label">{item.kicker}</div>
-                    <h3>{item.title}</h3>
-                    <p>{item.source}</p>
-                    <div className="reason-line"><span>理由</span>{item.reason}</div>
-                  </div>
-                </button>
-              ))}
+              <span className={telegramStatus.paired ? "channel-state connected" : "channel-state"}>{telegramStateLabel}</span>
             </div>
+          )}
+        </section>
+
+        <div className="duo">
+          <section className="panel question-panel" id="question" aria-labelledby="question-heading">
+            <div className="panel-top"><span className="panel-label">AIからの質問</span><span className="panel-meta">この回答も学習データになります</span></div>
+            <h2 id="question-heading">惹かれているのは、光ですか、余白ですか？</h2>
+            <div className="compare-grid">
+              <button className={answered === "光" ? "selected" : ""} onClick={() => answerQuestion("光")} aria-pressed={answered === "光"}>
+                <Art className="art-choice-light" compact /><span><b aria-hidden="true">A</b>光</span>
+              </button>
+              <button className={answered === "余白" ? "selected" : ""} onClick={() => answerQuestion("余白")} aria-pressed={answered === "余白"}>
+                <Art className="art-choice-space" compact /><span><b aria-hidden="true">B</b>余白</span>
+              </button>
+            </div>
+            {answered ? <p className="answer-confirm">「{answered}」を学習しました。いつでも変更できます。</p> : <p className="question-foot">正解はありません。いまの直感で選んでください。</p>}
           </section>
 
-          <section className="collection-section" id="collection" aria-labelledby="collection-heading">
-            <div className="section-heading collection-heading">
-              <div><span className="section-index">05</span><h2 id="collection-heading">保存したもの</h2></div>
-              <div className="collection-meta"><span>学習データ {signalCount}件{knowledgeItems.length ? ` · 知識 ${knowledgeItems.length}件` : ""}</span><button type="button" aria-expanded={collectionExpanded} onClick={() => setCollectionExpanded((open) => !open)}>{collectionExpanded ? "一覧を閉じる ↑" : "すべて見る →"}</button></div>
+          <section className="panel portrait-panel" id="portrait" aria-labelledby="portrait-heading">
+            <div className="panel-top"><span className="panel-label">好みプロフィール</span><span className="panel-meta">AIの現在の理解</span></div>
+            <div className="portrait-head">
+              <h2 id="portrait-heading">秩序の中に、<br />人の痕跡を残す。</h2>
+              <div className="portrait-score" aria-label={`${portraitProgress}% 完了`}>
+                <strong>{portraitProgress}<small>%</small></strong>
+                <span>学習度</span>
+              </div>
             </div>
-            {signInRequired && (
-              <div className="sign-in-notice" role="status">
-                <div><strong>Telegramから保存したデータを表示する</strong><p>このブラウザではまだ本人確認ができていません。ログインすると、iPhoneで見えている保存内容と同期します。</p></div>
-                <a href="/signin-with-chatgpt?return_to=%2F">ChatGPTでログイン <span>→</span></a>
-              </div>
-            )}
-            {knowledgeItems.length > 0 && (
-              <div className="knowledge-library">
-                <div className="knowledge-library-heading"><span>KNOWLEDGE</span><p>好みを広げるために取り込んだ考え方</p></div>
-                <div className="knowledge-library-grid">
-                  {knowledgeItems.slice(0, 3).map((item) => (
-                    <article key={item.id}><span>{item.learningMode === "both" ? "好み＋知識" : "知識"}</span><h3>{item.title}</h3><p>「{item.knowledgeNote}」</p>{item.url && <a href={item.url} target="_blank" rel="noreferrer">元の記事 <b>↗</b></a>}</article>
-                  ))}
+            <div className="trait-list">
+              {portraitTraits.map((trait) => (
+                <div className="trait" key={trait.label}>
+                  <span className="trait-label">{trait.label}</span>
+                  <strong>{trait.value}</strong>
+                  <div className="trait-line"><i style={{ width: `${trait.score}%` }} /></div>
                 </div>
-              </div>
-            )}
-            <div className="collection-grid">
-              {latestItems.map((item, index) => (
-                <article className={`collection-card collection-card-${index + 1}`} key={item.id}>
-                  {item.imageUrl ? <img src={item.imageUrl} alt="" /> : <Art className={item.art} />}
-                  <div className="collection-overlay"><span>{item.type}</span><span>{item.role}</span></div>
-                  <div className="collection-caption"><h3>{item.title}</h3><p>{item.source}</p></div>
-                </article>
               ))}
-              <button className="collection-add" onClick={() => setSaveOpen(true)}><span>＋</span><strong>AIに好みを教える</strong><small>気になったURLを保存</small></button>
             </div>
-            {collectionExpanded && (
-              <div className="collection-all" aria-label="保存済みの学習データ一覧">
-                <p className="collection-all-note">保存順に表示しています。URLを保存したものは、ここから元のページも開けます。知識として保存したものには、持ち帰った考えも残ります。</p>
-                <div className="collection-all-grid">
-                  {collectionItems.map((item) => (
-                    <article className="collection-all-card" key={item.id}>
-                      <div className="collection-all-art">
-                        {item.imageUrl ? <img src={item.imageUrl} alt="" /> : <Art className={item.art} />}
-                      </div>
-                      <div className="collection-all-copy">
-                        <div><span>{item.type}</span><span>{item.role}</span></div>
-                        <h3>{item.title}</h3>
-                        <p>{item.source}</p>
-                        <div className="tag-row">{item.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>
-                        {item.knowledgeNote && <p className="knowledge-note">「{item.knowledgeNote}」</p>}
-                        {item.url && <a href={item.url} target="_blank" rel="noreferrer">保存元を開く <span>↗</span></a>}
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              </div>
-            )}
-          </section>
-
-          <section className="brief-panel" id="brief">
-            <div className="brief-number">06</div>
-            <div className="brief-copy">
-              <p className="panel-kicker">学習した好みを活用</p>
-              <h2>制作に使う</h2>
-              <p>AIが理解した好みから、色・余白・写真・タイポグラフィの指示書を作成します。</p>
-            </div>
-            <div className="brief-tags"><span>温かい白</span><span>深い自然光</span><span>太いサンセリフ</span><span>一箇所の崩し</span></div>
-            <button onClick={() => setToast("好みプロフィール完成後に、制作指示書を生成できます")}>制作指示書を作る <span>↗</span></button>
+            <button className="text-link" onClick={() => setToast("50件たまると、詳しい好みプロフィールを作成できます")}>AIの解釈を確認・修正する <span aria-hidden="true">→</span></button>
           </section>
         </div>
 
-        <footer><span>TASTE ENGINE · LEARNING HUB</span><span>保存する → 答える → 確認する → 修正する</span></footer>
-      </section>
+        <section className="section" aria-labelledby="recommendation-heading">
+          <div className="section-head">
+            <div>
+              <h2 id="recommendation-heading">{weeklySummary ? "今週の発見" : "好みを確かめる3件"}</h2>
+              <p>{weeklySummary ? `${weeklySummary.weekKey}の週次レポート` : "3件以上学習すると、あなた向けの週次レポートに置き換わります。"}</p>
+            </div>
+            {!weeklySummary && <span className="sample-flag">サンプル</span>}
+          </div>
+          {weeklySummary && (
+            <div className="weekly-summary">
+              <div><span>今週見えている好み</span><p>{weeklySummary.profileSummary}</p></div>
+              <div><span>変化・仮説</span><p>{weeklySummary.observation}</p></div>
+            </div>
+          )}
+          <div className="recommendation-grid">
+            {weeklyRecommendations.map((item) => (
+              <button className="recommendation-card" key={item.id} onClick={() => setSelectedRecommendation(item)}>
+                <div className="recommendation-art-wrap">
+                  <Art className={item.art} />
+                  <span className={`kind kind-${item.kindClass}`}>{item.kind}</span>
+                  <span className="open-mark" aria-hidden="true">↗</span>
+                </div>
+                <div className="recommendation-copy">
+                  <div className="match-label">{item.kicker}</div>
+                  <h3>{item.title}</h3>
+                  <p>{item.source}</p>
+                  <div className="reason-line"><span>理由</span>{item.reason}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="section" id="collection" aria-labelledby="collection-heading">
+          <div className="section-head">
+            <div>
+              <h2 id="collection-heading">保存したもの</h2>
+              <p>学習データ {signalCount}件{knowledgeItems.length ? ` · 知識 ${knowledgeItems.length}件` : ""}</p>
+            </div>
+            <button className="ghost-button" type="button" aria-expanded={collectionExpanded} onClick={() => setCollectionExpanded((open) => !open)}>{collectionExpanded ? "一覧を閉じる ↑" : "すべて見る →"}</button>
+          </div>
+          {signInRequired && (
+            <div className="sign-in-notice" role="status">
+              <div>
+                <strong>Telegramから保存したデータを表示する</strong>
+                <p>このブラウザではまだ本人確認ができていません。ログインすると、iPhoneで見えている保存内容と同期します。</p>
+              </div>
+              <a href="/signin-with-chatgpt?return_to=%2F">ChatGPTでログイン <span aria-hidden="true">→</span></a>
+            </div>
+          )}
+          {knowledgeItems.length > 0 && (
+            <div className="knowledge-library">
+              <div className="knowledge-library-heading"><span>Knowledge</span><p>好みを広げるために取り込んだ考え方</p></div>
+              <div className="knowledge-library-grid">
+                {knowledgeItems.slice(0, 3).map((item) => (
+                  <article key={item.id}><span>{item.learningMode === "both" ? "好み＋知識" : "知識"}</span><h3>{item.title}</h3><p>「{item.knowledgeNote}」</p>{item.url && <a href={item.url} target="_blank" rel="noreferrer">元の記事 <b aria-hidden="true">↗</b></a>}</article>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="collection-grid">
+            {latestItems.map((item, index) => (
+              <article className={`collection-card collection-card-${index + 1}`} key={item.id}>
+                {item.imageUrl ? <img src={item.imageUrl} alt="" /> : <Art className={item.art} />}
+                <div className="collection-caption">
+                  <div className="collection-caption-meta"><span>{item.type}</span><span>{item.role}</span></div>
+                  <h3>{item.title}</h3>
+                  <p>{item.source}</p>
+                </div>
+              </article>
+            ))}
+            <button className="collection-add" onClick={() => setSaveOpen(true)}>
+              <span aria-hidden="true">＋</span>
+              <strong>AIに好みを教える</strong>
+              <small>気になったURLを保存</small>
+            </button>
+          </div>
+          {collectionExpanded && (
+            <div className="collection-all" aria-label="保存済みの学習データ一覧">
+              <p className="collection-all-note">保存順に表示しています。URLを保存したものは、ここから元のページも開けます。知識として保存したものには、持ち帰った考えも残ります。</p>
+              <div className="collection-all-grid">
+                {collectionItems.map((item) => (
+                  <article className="collection-all-card" key={item.id}>
+                    <div className="collection-all-art">
+                      {item.imageUrl ? <img src={item.imageUrl} alt="" /> : <Art className={item.art} />}
+                    </div>
+                    <div className="collection-all-copy">
+                      <div className="collection-all-meta"><span>{item.type}</span><span>{item.role}</span></div>
+                      <h3>{item.title}</h3>
+                      <p>{item.source}</p>
+                      <div className="tag-row">{item.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>
+                      {item.knowledgeNote && <p className="knowledge-note">「{item.knowledgeNote}」</p>}
+                      {item.url && <a href={item.url} target="_blank" rel="noreferrer">保存元を開く <span aria-hidden="true">↗</span></a>}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
+
+        <section className="brief-panel" id="brief" aria-labelledby="brief-heading">
+          <div className="brief-copy">
+            <span className="panel-label">学習した好みを活用</span>
+            <h2 id="brief-heading">制作に使う</h2>
+            <p>AIが理解した好みから、色・余白・写真・タイポグラフィの指示書を作成します。</p>
+            <div className="brief-tags"><span>温かい白</span><span>深い自然光</span><span>太いサンセリフ</span><span>一箇所の崩し</span></div>
+          </div>
+          <button onClick={() => setToast("好みプロフィール完成後に、制作指示書を生成できます")}>制作指示書を作る <span aria-hidden="true">↗</span></button>
+        </section>
+      </main>
+
+      <footer><span>Taste Engine · Learning hub</span><span>保存する → 答える → 確認する → 修正する</span></footer>
 
       <nav className="mobile-nav" aria-label="モバイルナビゲーション">
-        <button className={activeNav === "home" ? "active" : ""} onClick={() => navigateTo("home")}><span>◉</span>ホーム</button>
-        <button className={activeNav === "collection" ? "active" : ""} onClick={() => navigateTo("collection")}><span>▦</span>保存一覧</button>
-        <button className="mobile-save" onClick={() => setSaveOpen(true)}>＋</button>
-        <button className={activeNav === "portrait" ? "active" : ""} onClick={() => navigateTo("portrait")}><span>◎</span>好み</button>
-        <button className={activeNav === "brief" ? "active" : ""} onClick={() => navigateTo("brief")}><span>↗</span>制作</button>
+        <button className={activeNav === "home" ? "active" : ""} onClick={() => navigateTo("home")}><span aria-hidden="true">◉</span>ホーム</button>
+        <button className={activeNav === "collection" ? "active" : ""} onClick={() => navigateTo("collection")}><span aria-hidden="true">▦</span>保存一覧</button>
+        <button className="mobile-save" aria-label="AIに好みを教える" onClick={() => setSaveOpen(true)}>＋</button>
+        <button className={activeNav === "portrait" ? "active" : ""} onClick={() => navigateTo("portrait")}><span aria-hidden="true">◎</span>好み</button>
+        <button className={activeNav === "brief" ? "active" : ""} onClick={() => navigateTo("brief")}><span aria-hidden="true">↗</span>制作</button>
       </nav>
 
       {saveOpen && (
@@ -578,7 +580,7 @@ export default function Home() {
           <div className="save-modal" role="dialog" aria-modal="true" aria-labelledby="save-title" onMouseDown={(event) => event.stopPropagation()}>
             <button className="modal-close" aria-label="閉じる" onClick={() => setSaveOpen(false)}>×</button>
             <div className="modal-index">AIに好みを教える · 学習データ {signalCount + 1}</div>
-            <h2 id="save-title">気になったものを<br />保存する</h2>
+            <h2 id="save-title">気になったものを保存する</h2>
             <p className="modal-lead">保存したものとあなたの反応から、AIが好みを学びます。正確な説明は不要です。</p>
             <form onSubmit={addReference}>
               <label className="field-label" htmlFor="reference-url">URL</label>
@@ -597,7 +599,7 @@ export default function Home() {
               </fieldset>
               <label className="field-label" htmlFor="reference-note">ひとこと <span>任意</span></label>
               <input id="reference-note" name="note" type="text" placeholder="例：色よりも、写真と文字の距離感が好き" />
-              <button className="modal-submit" type="submit">保存して分析する <span>→</span></button>
+              <button className="modal-submit" type="submit">保存して分析する <span aria-hidden="true">→</span></button>
             </form>
           </div>
         </div>
@@ -615,14 +617,14 @@ export default function Home() {
               {selectedRecommendation.description && <p className="detail-description">{selectedRecommendation.description}</p>}
               <div className="detail-reason"><span>提案理由</span><p>{selectedRecommendation.reason}</p></div>
               <div className="tag-row">{selectedRecommendation.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>
-              {selectedRecommendation.url && <a className="detail-link" href={selectedRecommendation.url} target="_blank" rel="noreferrer">実際に見る <span>↗</span></a>}
+              {selectedRecommendation.url && <a className="detail-link" href={selectedRecommendation.url} target="_blank" rel="noreferrer">実際に見る <span aria-hidden="true">↗</span></a>}
               <div className="reaction-block"><p>どう感じましたか？</p><div>{["かなり好き", "一部だけ好き", "参考になる", "今は違う"].map((reaction) => <button key={reaction} onClick={() => reactToRecommendation(reaction)}>{reaction}</button>)}</div></div>
             </div>
           </div>
         </div>
       )}
 
-      {toast && <div className="toast" role="status"><span>✓</span>{toast}</div>}
-    </main>
+      {toast && <div className="toast" role="status"><span aria-hidden="true">✓</span>{toast}</div>}
+    </div>
   );
 }
