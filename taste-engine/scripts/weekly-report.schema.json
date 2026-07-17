@@ -1,0 +1,28 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["profileSummary", "observation", "recommendations", "question"],
+  "properties": {
+    "profileSummary": { "type": "string" },
+    "observation": { "type": "string" },
+    "recommendations": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["category", "kind", "title", "url", "description", "reason"],
+        "properties": {
+          "category": { "type": "string", "enum": ["close", "edge", "wildcard"] },
+          "kind": { "type": "string", "enum": ["site", "article", "inspiration"] },
+          "title": { "type": "string" },
+          "url": { "type": "string" },
+          "description": { "type": "string" },
+          "reason": { "type": "string" }
+        }
+      }
+    },
+    "question": { "type": "string" }
+  }
+}

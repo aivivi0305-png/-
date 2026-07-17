@@ -96,18 +96,18 @@ scheduled_at: 2026-07-21T12:00:00+09:00
 
 キャプションの文体・ハッシュタグは `config/settings.mjs` の `photo` セクションで調整できます。
 
-## 🎞️ Taste Engine — AIに好みを学習させるUI
+## 🎞️ Taste Engine — 好みをAIに教える学習ハブ
 
-[`taste-engine/index.html`](taste-engine/index.html) は、写真スタイルのA/B比較であなたの好みをAIに学習させる単体アプリです。サーバー不要・1ファイル完結で、ブラウザで開くだけで動きます。
+[`taste-engine/`](taste-engine/) は、Telegram経由で画像・記事を収集してAIに好みと知識を学習させる個人用ハブ(Next.js + Cloudflare D1)のソースコードです。詳細は [`taste-engine/CLAUDE.md`](taste-engine/CLAUDE.md) と [`taste-engine/README.md`](taste-engine/README.md) を参照してください。
 
-- **学習させる** — 2つの写真スタイルから好みを選ぶと、オンライン学習(ロジスティック回帰)で要素ごとの重みが更新されます。5回学習するとAIが選択を予測し始め、的中率が「学習度」としてヘッダーに表示されます
-- **好みプロファイル** — 好き/苦手のトップ5タグと、光・構図・色調など要素別の傾向バーを表示
-- **履歴とデータ** — 学習履歴の確認、JSONのエクスポート/インポート、リセット。データはブラウザのlocalStorageに自動保存されます
-- キーボード操作(←/→/S/Z)、ダークモード、スマホ表示に対応
+```bash
+cd taste-engine
+npm install
+npm run dev    # 開発サーバー
+npm run lint && npm run build
+```
 
-学習結果のエクスポートJSONは、`config/settings.mjs` の `photo` セクション(キャプション文体)を自分好みに調整する際の参考にも使えます。
-
-GitHub Pagesを有効にすれば `https://<owner>.github.io/<repo>/taste-engine/` で公開できます(Settings → Pages → Branch: main)。
+APIキー・Telegramトークン等のシークレットはこのリポジトリには置かず、ホスティング側で管理します。
 
 ## Instagram利用時の注意
 

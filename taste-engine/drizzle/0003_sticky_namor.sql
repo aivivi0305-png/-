@@ -1,0 +1,1 @@
+ALTER TABLE `taste_entries` ADD `learning_mode` text DEFAULT 'taste' NOT NULL;

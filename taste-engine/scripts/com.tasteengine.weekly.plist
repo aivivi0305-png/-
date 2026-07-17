@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.tasteengine.weekly</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/local/bin/node</string>
+    <string>/Users/yonce/Library/Application Support/taste-engine/scripts/run-weekly-free.mjs</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/Users/yonce/Library/Application Support/taste-engine</string>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Weekday</key>
+    <integer>0</integer>
+    <key>Hour</key>
+    <integer>10</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>HOME</key>
+    <string>/Users/yonce</string>
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+  </dict>
+  <key>StandardOutPath</key>
+  <string>/Users/yonce/Library/Application Support/taste-engine/logs/weekly.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/yonce/Library/Application Support/taste-engine/logs/weekly-error.log</string>
+</dict>
+</plist>
