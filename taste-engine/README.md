@@ -68,6 +68,17 @@ node /path/to/taste-engine/scripts/taste-context.mjs   # → ./TASTE.md を生�
 
 ハブの「制作に使う」パネルの**「嗜好コンテキストをコピー」**ボタンで、画面に読み込まれている実データからMarkdownを生成してクリップボードにコピーできます。スクリプトを叩けない環境(スマホ等)からチャットに直接貼る用です。
 
+### 批評モード(自分の作品を送る)
+
+Telegramに**自分の**写真・スクリーンショット・下書きURLを送り、「批評してもらう」を選ぶと批評リクエストとして保存されます(好み・知識の学習データには混ざりません)。ローカルランナーを実行すると、蓄積された嗜好コンテキストと照らした批評(①良い点 ②嗜好とのずれ ③次の一手)がTelegramに返ります:
+
+```bash
+node scripts/run-critique.mjs            # 保留中の批評リクエストをまとめて処理
+TASTE_ENGINE_RUNNER=claude node scripts/run-critique.mjs   # Claude Codeで生成
+```
+
+送信時のキャプションに「見てほしい点」を書いておくと批評に反映されます。週次ランナーと同じ設定ファイル・launchd等のスケジュール実行が使えます。
+
 ### 週次レポートを Claude Code で生成する
 
 週次ランナーはデフォルトで ChatGPT 同梱の Codex を使いますが、環境変数で Claude Code に切り替えられます(Claude Pro/Max のサブスクリプションで動作、APIキー不要):

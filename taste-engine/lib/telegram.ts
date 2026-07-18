@@ -97,7 +97,10 @@ export function learningModeKeyboard(entryId: number): TelegramButton[][] {
       { text: "好みとして残す", callback_data: `mode:${entryId}:taste` },
       { text: "知識として学ぶ", callback_data: `mode:${entryId}:knowledge` },
     ],
-    [{ text: "好みと知識の両方", callback_data: `mode:${entryId}:both` }],
+    [
+      { text: "好みと知識の両方", callback_data: `mode:${entryId}:both` },
+      { text: "批評してもらう", callback_data: `mode:${entryId}:critique` },
+    ],
   ];
 }
 
@@ -138,4 +141,5 @@ export const learningModeLabels: Record<string, string> = {
   taste: "好みとして残す",
   knowledge: "知識として学ぶ",
   both: "好みと知識の両方",
+  critique: "批評してもらう",
 };

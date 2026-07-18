@@ -42,11 +42,18 @@ The product has two separate learning layers:
 - `scripts/run-weekly-free.mjs` — local weekly runner; it passes both taste
   signals and knowledge references to the weekly curator. The curator CLI is
   switchable: Codex by default, Claude Code with `TASTE_ENGINE_RUNNER=claude`.
+- `lib/critique.ts`, `app/api/jobs/critique/route.ts`, and
+  `scripts/run-critique.mjs` — critique mode. The owner sends their own work
+  from Telegram and picks 批評してもらう; the local runner critiques it against
+  the taste context and replies on Telegram. Critique entries must never be
+  counted as taste or knowledge signals.
 
 ## Telegram learning flow
 
 1. The owner sends an image, screenshot, file, URL, or text.
-2. The bot asks how to use it: `taste`, `knowledge`, or `both`.
+2. The bot asks how to use it: `taste`, `knowledge`, `both`, or `critique`
+   (critique = the owner's own work; answered asynchronously by the local
+   critique runner and excluded from all learning signals).
 3. `taste` asks which visual/content aspect matters, then the intended distance
    from the owner's own work.
 4. `knowledge` asks for one short takeaway in the owner's words.

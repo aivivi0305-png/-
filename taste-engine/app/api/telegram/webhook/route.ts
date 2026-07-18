@@ -300,7 +300,7 @@ async function handleMessage(message: TelegramMessage) {
   if (command.startsWith("/review")) return handleReview(message, user);
   if (command.startsWith("/weekly")) return handleWeekly(message, user);
   if (command.startsWith("/help")) {
-    await sendTelegramMessage(message.chat.id, "画像・スクリーンショット・URLを送るとTaste Engineへ保存します。送ったあとに、好み・知識・両方のどれとして使うかを選べます。\n\n/status 保存件数\n/review 未回答を確認\n/weekly 今週のレポート");
+    await sendTelegramMessage(message.chat.id, "画像・スクリーンショット・URLを送るとTaste Engineへ保存します。送ったあとに、好み・知識・両方・批評のどれとして使うかを選べます。自分の作品を送って「批評してもらう」を選ぶと、学習済みの好みと照らした批評が返ります。\n\n/status 保存件数\n/review 未回答を確認\n/weekly 今週のレポート");
     return;
   }
   if (!message.photo && !message.document && !extractUrl(command) && await handleKnowledgeNote(message, user)) return;
@@ -357,7 +357,7 @@ async function handleCallback(update: NonNullable<TelegramUpdate["callback_query
       await clearTelegramKeyboard(chatId, messageId).catch(() => undefined);
       return;
     }
-    const nextStatus = value === "knowledge" ? "awaiting_note" : "awaiting_aspect";
+    const nextStatus = value === "knowledge" ? "awaiting_note" : value === "critique" ? "awaiting_runner" : "awaiting_aspect";
     await db.update(tasteEntries).set({
       learningMode: value,
       status: nextStatus,
@@ -367,6 +367,8 @@ async function handleCallback(update: NonNullable<TelegramUpdate["callback_query
     await clearTelegramKeyboard(chatId, messageId).catch(() => undefined);
     if (value === "knowledge") {
       await sendTelegramMessage(chatId, `「${entry.title}」から持ち帰りたい考えを、一言で送ってください。\n\n例：余白は装飾ではなく、情報の優先順位をつくるもの`);
+    } else if (value === "critique") {
+      await sendTelegramMessage(chatId, `「${entry.title}」を批評リクエストとして受け付けました ✓\n\n次回ランナー実行時に、これまでに学習したあなたの好みと照らした批評を返します。見てほしい点があれば、送信時のキャプションに書いておくと反映されます。\n\n※批評対象は好みの学習データには含めません。`);
     } else {
       await sendTelegramMessage(chatId, `「${entry.title}」のどこに惹かれましたか？`, aspectKeyboard(entryId, entry.sourceType));
     }

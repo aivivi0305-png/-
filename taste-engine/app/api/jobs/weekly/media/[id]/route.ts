@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { getDb } from "../../../../../../db";
 import { tasteEntries } from "../../../../../../db/schema";
 import { requireMediaBucket } from "../../../../../../lib/runtime";
@@ -11,10 +11,11 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   const entryId = Number(id);
   if (!Number.isInteger(entryId)) return new Response("Not found", { status: 404 });
 
+  // awaiting_runner は批評リクエストの画像取得用(ジョブ認証済みのみ到達)。
   const [entry] = await getDb()
     .select()
     .from(tasteEntries)
-    .where(and(eq(tasteEntries.id, entryId), eq(tasteEntries.status, "complete")))
+    .where(and(eq(tasteEntries.id, entryId), inArray(tasteEntries.status, ["complete", "awaiting_runner"])))
     .limit(1);
   if (!entry?.mediaKey) return new Response("Not found", { status: 404 });
 

@@ -168,8 +168,9 @@ export async function getWeeklyContext(ownerId: string) {
     .where(and(eq(weeklyReports.ownerId, ownerId), eq(weeklyReports.weekKey, weekKey)))
     .limit(1);
 
-  const tasteEntriesForReport = completedEntries.filter((entry) => entry.learningMode !== "knowledge");
-  const knowledgeEntries = completedEntries.filter((entry) => entry.learningMode !== "taste");
+  // 批評リクエスト(critique)は本人の作品なので、好み・知識のどちらの信号にも含めない。
+  const tasteEntriesForReport = completedEntries.filter((entry) => entry.learningMode === "taste" || entry.learningMode === "both");
+  const knowledgeEntries = completedEntries.filter((entry) => entry.learningMode === "knowledge" || entry.learningMode === "both");
 
   return {
     ownerId,
