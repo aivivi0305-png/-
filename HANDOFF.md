@@ -5,7 +5,7 @@
 
 - リポジトリ: `aivivi0305-png/-`（public）
 - 稼働ブランチ: `claude/blue-selection-impl-k0963b`（**これがデフォルトブランチ。マージ作業は不要**）
-- 関連Issue: [#1](https://github.com/aivivi0305-png/-/issues/1)
+- 関連Issue: [#2](https://github.com/aivivi0305-png/-/issues/2)
 - 元セッションID: `session_017ZGxZaGkGUsZzGaoYgBc7p`
 
 ---
@@ -106,6 +106,16 @@ Instagram（`IG_USER_ID` / `IG_ACCESS_TOKEN`）は後回しでよい。
 
 ### 写真を投稿する（SIGMA fp）
 
+**Mac miniを使う場合（おすすめ）**: 書き出しフォルダに入れるだけで自動送信されます。
+セットアップは [`local/README.md`](local/README.md) を参照（Mac miniで1回だけ、5分ほど）。
+
+```bash
+cd ~ && git clone https://github.com/aivivi0305-png/-.git sns-autopilot
+cd sns-autopilot && bash local/install-macos.sh
+```
+
+**手動で送る場合**:
+
 1. スマホでGitHubを開き、`photos/inbox` → **Add file** → **Upload files** で写真をアップ（JPEG）
 2. 数分待つとAIがキャプションを書いてPRを作る
 3. PRを開いて確認 → **Merge（=承認）**。直したければ編集してからMerge
@@ -139,6 +149,9 @@ PRを **Close** するだけ。何も投稿されない。
 
 ```
 config/settings.mjs          ← 発信内容の設定（ここを編集する）
+local/                       Mac mini用の写真自動送信（README.md に手順あり）
+  sync-photos.sh             監視フォルダ → GitHub へ push
+  install-macos.sh           launchd に常駐登録するセットアップ
 scripts/
   generate.mjs               テキスト下書き生成（Web検索付き）
   caption.mjs                写真キャプション生成
@@ -157,6 +170,12 @@ images/YYYY-MM/              リサイズ済み画像（自動でコミットさ
 ```
 
 ---
+
+## 既知の修正済み不具合
+
+- **写真の重複処理**（2026-07-28 修正）: 処理済み写真の削除がPRブランチにしか入らず、
+  PRをマージする前に次の写真をpushすると前の写真が再処理され、重複した下書きが作られていた。
+  現在はデフォルトブランチのinboxからも即座に削除されるため発生しない。
 
 ## 今後やりたいこと（未着手）
 

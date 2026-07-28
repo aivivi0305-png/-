@@ -21,6 +21,9 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     steps:
       - uses: actions/checkout@v4
+        with:
+          # デフォルトブランチへ追従コミットを push するため全履歴を取得する
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -36,13 +39,20 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           PR_BODY_PATH: ${{ runner.temp }}/pr-body.md
 
-      - name: 承認用PRを作成
+      - name: 承認用PRを作成し、処理済み写真をinboxから外す
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          BRANCH="photos/$(date +%Y%m%d-%H%M%S)"
+          set -uo pipefail
+          DEFAULT_BRANCH="${{ github.event.repository.default_branch }}"
+
+          # caption.mjs が処理して削除した写真のパスを控えておく
+          PROCESSED=$(git diff --name-only --diff-filter=D -- photos/inbox || true)
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          BRANCH="photos/$(date +%Y%m%d-%H%M%S)"
           git checkout -b "$BRANCH"
           git add -A posts/queue images photos/inbox
           if git diff --cached --quiet; then
@@ -56,3 +66,23 @@ jobs:
               --title "📷 写真投稿の承認依頼 ($(date +%Y-%m-%d))" \
               --body-file "${{ runner.temp }}/pr-body.md"
           fi
+
+          # 処理済み写真はデフォルトブランチのinboxからも即座に削除する。
+          # PRのマージを待つと、その間に別の写真がpushされたときに
+          # 同じ写真がもう一度処理され、重複した下書きが作られてしまうため。
+          [ -n "$PROCESSED" ] || exit 0
+          git checkout "$DEFAULT_BRANCH"
+          echo "$PROCESSED" | while IFS= read -r f; do
+            [ -n "$f" ] && git rm -q --ignore-unmatch "$f"
+          done
+          git diff --cached --quiet && exit 0
+          git commit -m "chore: 処理済み写真をinboxから削除"
+          for attempt in 1 2 3; do
+            git pull --rebase --quiet origin "$DEFAULT_BRANCH" || true
+            if git push origin "$DEFAULT_BRANCH"; then
+              exit 0
+            fi
+            echo "push に失敗。リトライします ($attempt/3)"
+            sleep 5
+          done
+          echo "::warning::inboxの整理をpushできませんでした。次回の実行で写真が重複処理される可能性があります"

@@ -86,8 +86,10 @@ scheduled_at: 2026-07-21T12:00:00+09:00
 
 撮った写真を投稿まで持っていくハードルを下げるための仕組みです。
 
-1. **写真を `photos/inbox/` に置く** — PCならgit push、スマホならGitHubをブラウザで開いて
-   `photos/inbox` → `Add file` → `Upload files`(JPEG/PNG/WebP。RAW/DNGは書き出してから)
+1. **写真を `photos/inbox/` に置く**
+   - **Mac mini**: 書き出しフォルダに入れるだけで自動送信できます → [`local/README.md`](local/README.md)
+   - **スマホ**: GitHubをブラウザで開いて `photos/inbox` → `Add file` → `Upload files`
+   - JPEG/PNG/WebPに対応(RAW/DNGは書き出してから)
 2. 置いた瞬間にActionsが起動し、**AIが写真を見てキャプション案を作成**、承認用PRを作ります
    - 画像は自動で長辺2048pxに縮小して `images/YYYY-MM/` にコミット(リポジトリが重くならない)
    - 投稿枠は既存の予約と被らない翌日以降の空きスロットに自動割り当て
