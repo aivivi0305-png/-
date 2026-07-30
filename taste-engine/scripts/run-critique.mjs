@@ -19,9 +19,17 @@ const codexBin = process.env.TASTE_ENGINE_CODEX_BIN
 const runner = (process.env.TASTE_ENGINE_RUNNER ?? "codex").toLowerCase();
 const claudeBin = process.env.TASTE_ENGINE_CLAUDE_BIN ?? "claude";
 const dryRun = process.argv.includes("--dry-run");
+// --watch [秒] で常駐し、一定間隔で保留リクエストを取りに行く(tmuxで放置する用)。
+const watchIndex = process.argv.indexOf("--watch");
+const watch = watchIndex !== -1;
+const watchIntervalMs = Math.max(60, Number(process.argv[watchIndex + 1]) || 300) * 1000;
 
 function fail(message) {
   throw new Error(`Taste Engine critique runner: ${message}`);
+}
+
+function timestamp() {
+  return new Date().toLocaleTimeString("ja-JP", { hour12: false });
 }
 
 async function loadConfig() {
@@ -124,12 +132,14 @@ async function generateCritique(item, tasteContext, imagePath, directory) {
   return (await readFile(outputPath, "utf8")).trim();
 }
 
-async function main() {
-  const config = await loadConfig();
-  console.log("Taste Engine: critique runner started.");
+async function runOnce(config) {
   const { pending = [] } = await requestJson(`${config.baseUrl}/api/jobs/critique`, config.secret);
-  console.log(`Taste Engine: ${pending.length} critique request(s) pending.`);
-  if (dryRun || pending.length === 0) return;
+  if (pending.length === 0) {
+    if (!watch) console.log("Taste Engine: 保留中の批評リクエストはありません。");
+    return;
+  }
+  console.log(`[${timestamp()}] Taste Engine: ${pending.length} critique request(s) pending.`);
+  if (dryRun) return;
 
   const contextResponse = await fetch(`${config.baseUrl}/api/agent/context`, {
     headers: { authorization: `Bearer ${config.secret}` },
@@ -156,6 +166,22 @@ async function main() {
     }
   } finally {
     await rm(directory, { recursive: true, force: true });
+  }
+}
+
+async function main() {
+  const config = await loadConfig();
+  console.log(`Taste Engine: critique runner started (${runner}${watch ? `, watch ${watchIntervalMs / 1000}s` : ""}).`);
+  if (!watch) return runOnce(config);
+
+  // 常駐モードでは、1回の失敗で止めずに次の周回へ進む(ネットワーク断など)。
+  for (;;) {
+    try {
+      await runOnce(config);
+    } catch (error) {
+      console.error(`[${timestamp()}] ${error instanceof Error ? error.message : error}`);
+    }
+    await new Promise((resolve) => setTimeout(resolve, watchIntervalMs));
   }
 }
 

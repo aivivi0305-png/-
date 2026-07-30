@@ -90,10 +90,24 @@ node /path/to/taste-engine/scripts/taste-context.mjs   # → ./TASTE.md を生�
 ### ランナーの実行
 
 ```bash
-node taste-engine/scripts/run-weekly-free.mjs   # 週次レポート
-node taste-engine/scripts/run-critique.mjs      # 溜まった批評リクエストを処理
-# どちらも TASTE_ENGINE_RUNNER=claude でClaude Code生成に切り替え可
+node taste-engine/scripts/run-weekly-free.mjs        # 週次レポート
+node taste-engine/scripts/run-critique.mjs           # 溜まった批評リクエストを1回だけ処理
+node taste-engine/scripts/run-critique.mjs --watch 300  # 300秒ごとに常駐(tmuxで放置する用)
+# どれも TASTE_ENGINE_RUNNER=claude でClaude Code生成に切り替え可
 ```
+
+### tmux(ローカル作業環境)
+
+```bash
+./scripts/tmux-session.sh          # セッション作成 + 接続
+./scripts/tmux-session.sh --no-attach
+```
+
+`work` / `hub`(開発サーバ)/ `critique`(批評ランナー常駐)/ `weekly` の4ウィンドウ構成。
+開発サーバと週次ランナーは**コマンドを入力しただけの状態**にしてあり、Enterを押すまで起動しません
+(ポート衝突や意図しない実行を避けるため)。批評ランナーだけは設定ファイルがあれば自動で常駐します。
+
+環境変数: `TASTE_TMUX_SESSION`(セッション名、既定 `taste`)、`TASTE_CRITIQUE_INTERVAL`(秒、既定 300)。
 
 ---
 
@@ -105,11 +119,14 @@ node taste-engine/scripts/run-critique.mjs      # 溜まった批評リクエス
 特に確認したいのは、実データが入った状態での好みプロフィール表示と、
 「嗜好コンテキストをコピー」がスマホのブラウザで動くか(クリップボードAPIの権限)。
 
-### B. ランナーの定期実行 【未着手】
+### B. ランナーの定期実行 【tmuxで対応済み・launchd化は任意】
 
-批評ランナーは現状「手で叩く」運用。Macの launchd で定期実行すれば、
-Telegramに送って放置 → しばらくして批評が返る、という体験になる。
-既存の `scripts/com.tasteengine.weekly.plist` が雛形として使える。
+`run-critique.mjs --watch` + `scripts/tmux-session.sh` の `critique` ウィンドウで常駐するようにした。
+Telegramに送って放置 → 数分後に批評が返る、という体験はこれで成立する。
+
+残っているのは「Macを再起動しても勝手に復帰する」ようにすること。必要なら
+既存の `taste-engine/scripts/com.tasteengine.weekly.plist` を雛形に launchd 化する
+(tmuxセッションを立ち上げる方式でも、ランナーを直接叩く方式でもよい)。
 
 ### C. SNS Autopilot 側との連携 【未着手・効果大】
 

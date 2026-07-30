@@ -17,6 +17,14 @@
 npm install && npm install --prefix taste-engine
 ```
 
+ローカル(Mac)で作業するときは、tmuxセッションを一発で立ち上げられます:
+
+```bash
+./scripts/tmux-session.sh
+```
+
+`work`(作業用シェル)/ `hub`(開発サーバ)/ `critique`(批評ランナー常駐)/ `weekly`(週次レポート手動実行)の4ウィンドウを作ります。既存セッションがあれば作り直さずそのまま接続します。
+
 ## 確認コマンド
 
 ```bash
