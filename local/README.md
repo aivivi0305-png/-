@@ -61,6 +61,39 @@ bash local/install-macos.sh ~/Pictures/書き出し/SNS用
 
 ---
 
+## tmux で作業する（Mac miniにSSHして触る場合）
+
+SSHが切れても作業が生き残るよう、tmuxの中でClaude Codeを動かせます。
+
+```bash
+cd ~/sns-autopilot
+bash local/tmux-start.sh
+```
+
+ウィンドウが3つ用意されます。
+
+| # | 名前 | 中身 |
+|---|---|---|
+| 0 | `claude` | Claude Code。起動時に `HANDOFF.md` を読ませて前回の続きから始まる |
+| 1 | `logs` | 写真同期のログを追尾（`tail -f`） |
+| 2 | `shell` | git操作などの作業用 |
+
+よく使う操作:
+
+| 操作 | キー |
+|---|---|
+| ウィンドウ切り替え | `Ctrl-b` → `0` / `1` / `2` |
+| 切断（作業は生き続ける） | `Ctrl-b` → `d` |
+| 再接続 | `bash local/tmux-start.sh` または `tmux attach -t sns` |
+
+すでにセッションがある場合は、作り直さずそのまま繋がります。
+Claude Code が未インストールなら、`claude` ウィンドウにインストール手順が表示されます
+（`npm install -g @anthropic-ai/claude-code`）。
+
+tmuxが無い場合は `brew install tmux` で入れてください。
+
+---
+
 ## 使い方
 
 1. 現像した写真を **JPEG** で監視フォルダに書き出す

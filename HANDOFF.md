@@ -19,6 +19,14 @@ Dispatchでこのリポジトリを選んで新しいセッションを開き、
 そのうえで「次にやること」の先頭から一緒に進めたい。
 ```
 
+## Mac mini（tmux）で続きをやる場合
+
+SSHが切れても作業が残ります。上のプロンプトは自動で入力されます。
+
+```bash
+cd ~/sns-autopilot && bash local/tmux-start.sh
+```
+
 ---
 
 ## これは何のシステムか
@@ -149,9 +157,10 @@ PRを **Close** するだけ。何も投稿されない。
 
 ```
 config/settings.mjs          ← 発信内容の設定（ここを編集する）
-local/                       Mac mini用の写真自動送信（README.md に手順あり）
+local/                       Mac mini用（README.md に手順あり）
   sync-photos.sh             監視フォルダ → GitHub へ push
   install-macos.sh           launchd に常駐登録するセットアップ
+  tmux-start.sh              tmuxで作業環境を起動（claude / logs / shell）
 scripts/
   generate.mjs               テキスト下書き生成（Web検索付き）
   caption.mjs                写真キャプション生成
